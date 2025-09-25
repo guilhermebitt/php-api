@@ -22,6 +22,11 @@ class Router
     // Separa as partes da uri em "/"
     $parts = explode("/", trim($uri, "/"));
 
+    // Se a primeira parte for "crud", remove ela antes de continuar o código
+    if ($parts[0] == 'crud') {
+      array_shift($parts);
+    }
+
     // CRUD RESTful
     if ($parts[0] === "users") {
       $id = $parts[1] ?? null;  // se tiver ID na rota
