@@ -1,16 +1,19 @@
 <?php
 require_once __DIR__ . "/../Controllers/UserController.php";
+require_once __DIR__ . "/../Controllers/AuthController.php";
 
 // Classe de controle de rota do sistema MVC
 class Router
 {
   // Atributo privado para o controle de usuário
   private $userController;
+  private $authController;
 
   // Método construtor que instância o controller
   public function __construct()
   {
     $this->userController = new UserController();
+    $this->authController = new AuthController();
   }
 
   // Método público que retorna um código com base na rota inserida pelo cliente
@@ -19,12 +22,19 @@ class Router
     // Remove query string da URI, se houver
     $uri = parse_url($uri, PHP_URL_PATH);
 
-    // Separa as partes da uri em "/"
+    // Separa as partes da uri por "/"
     $parts = explode("/", trim($uri, "/"));
 
     // Se a primeira parte for "crud", remove ela antes de continuar o código
     if ($parts[0] == 'crud') {
       array_shift($parts);
+    }
+
+    // LOGIN
+    if ($parts[0] === "login" && $method === "POST") {
+      $data = json_decode(file_get_contents("php://input"));
+      $this->authController->login($data);
+      return;
     }
 
     // CRUD RESTful
