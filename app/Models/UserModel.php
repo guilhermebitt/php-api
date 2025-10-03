@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . "/../../config/Database.php";
+require_once __DIR__ . "/../Core/Database.php";
 
 // Classe que controlará o banco de dados via Model
 class UserModel
