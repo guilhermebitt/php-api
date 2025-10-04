@@ -9,5 +9,5 @@ return [
   'database'      => 'crud_api',
   'user'          => 'guilherme',
   'password'      => 'B-Ljh@P._MWA4dHR',
-  'secret'        => '123'
+  'tokenKey'      => 'wBdvgCKakxoQIAqNgdyRYtSHMKxtld'
 ];

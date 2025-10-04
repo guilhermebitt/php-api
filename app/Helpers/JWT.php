@@ -7,13 +7,13 @@
 class JWT
 {
   // Definição de variáveis privadas
-  private static $secret;
+  private static $tokenKey;
 
   // Método construtor da classe
   public function __construct()
   {
     $config = require __DIR__ . '/../../config/config.php'; // carrega as configs
-    $this->secret = $config['secret'];
+    $this->tokenKey = $config['tokenKey'];
   }
 
   // Codificação Base64 URL Safe
@@ -39,9 +39,39 @@ class JWT
     $base64Header = self::base64UrlEncode($header);
     $base64Payload = self::base64UrlEncode(json_encode($payload));
 
-    $signature = hash_hmac('sha256', "$base64Header.$base64Payload", self::$secret, true);
+    $signature = hash_hmac('sha256', "$base64Header.$base64Payload", self::$tokenKey, true);
     $base64Signature = self::base64UrlEncode($signature);
 
     return "$base64Header.$base64Payload.$base64Signature";
+  }
+
+  // Validar token
+  public static function validate($token)
+  {
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) {
+      return false;
+    }
+
+    list($base64Header, $base64Payload, $base64Signature) = $parts;
+
+    // Recalcular assinatura
+    $expectedSignature = self::base64UrlEncode(
+      hash_hmac('sha256', "$base64Header.$base64Payload", self::$tokenKey, true)
+    );
+
+    if (!hash_equals($expectedSignature, $base64Signature)) {
+      return false; // assinatura inválida
+    }
+
+    // Decodificar payload
+    $payload = json_decode(self::base64UrlDecode($base64Payload), true);
+
+    // Verificar expiração
+    if (isset($payload['exp']) && $payload['exp'] < time()) {
+      return false; // expirado
+    }
+
+    return $payload; // retorna os dados do usuário
   }
 }

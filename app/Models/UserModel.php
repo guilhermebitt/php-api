@@ -69,7 +69,7 @@ class UserModel
     try {
       // Verifica se já existe um usuário
       if ($this->getUserByEmail($email)) {
-        return "Usuário já existente";
+        return ["Usuário já existente", false];
       }
 
       // Prepara a query SQL para criar um novo usuário
@@ -84,7 +84,7 @@ class UserModel
       $stmt->bindParam(":phone", $phone, PDO::PARAM_STR);
 
       // Executa a query e retorna uma mensagem
-      return $stmt->execute() ? "Cadastro criado com sucesso!" : "Erro ao cadastrar usuário.";
+      return $stmt->execute() ? ["Cadastro criado com sucesso!", true] : ["Erro ao cadastrar usuário.", false];
     } catch (PDOException $e) {
       // Retorna uma mensagem de erro em caso de algo ocorrer errado
       return "Erro: " . $e->getMessage();
