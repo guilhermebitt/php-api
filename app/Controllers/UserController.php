@@ -8,13 +8,11 @@ class UserController
 {
   // Atributos privados da classe
   private $userModel;
-  private $authMiddleware;
 
   // Método construtor. Cria o modelo do usuário
   public function __construct()
   {
     $this->userModel = new UserModel();
-    $this->authMiddleware = new AuthMiddleware();
   }
 
   // Método que retorna todos os usuários da tabela
@@ -27,10 +25,12 @@ class UserController
   // Método que autentica o usuário
   public function auth()
   {
-    $user = $this->authMiddleware::handle();
+    $userId = AuthMiddleware::handle();
+
     return JsonView::render([
       "message" => "Usuário autenticado!",
-      "user" => $user
+      "userId"  => $userId,
+      "success" => true
     ], 200);
   }
 
@@ -38,7 +38,7 @@ class UserController
   public function create($data)
   {
     if (!$data->username || !$data->email || !$data->pass) {
-      JsonView::render(["error" => "Campos obrigatórios faltando"], 400);
+      JsonView::render(["success" => false, "error" => "Campos obrigatórios faltando"], 400);
       return;
     }
 
@@ -46,7 +46,8 @@ class UserController
       $data->username,
       $data->email,
       $data->pass,
-      $data->phone ?? null
+      $data->phone ?? null,
+      $data->profilePic ?? null
     );
 
     JsonView::render(["message" => $result[0], "success" => $result[1]]);
@@ -55,31 +56,33 @@ class UserController
   // Método que retorna o usuário pelo Id
   public function show($id)
   {
-    $userData = $this->userModel->getUserById($id);
-    if ($userData) {
+    $result = $this->userModel->getUserById($id);
+    if ($result[1]) {
+      $userData = $result[0];
       return JsonView::render([
-        'id'        => $userData['id'],
-        'username'  => $userData['username'],
-        'email'     => $userData['email'],
-        'phone'     => $userData['phone']
+        'id'          => $userData['id'],
+        'username'    => $userData['username'],
+        'email'       => $userData['email'],
+        'phone'       => $userData['phone'],
+        'profile_pic' => $userData['profile_pic']
       ]);
     } else {
-      return JsonView::render(["message" => "Usuário não encontrado"], 400);
+      return JsonView::render(["error" => $result[0], "success" => $result[1]], 400);
     }
   }
 
   // Método que atualiza um usuário através do ID
   public function update($id, $data)
   {
-    $msg = $this->userModel->updateUser($id, $data);
-    JsonView::render(["message" => $msg], 200);
+    $result = $this->userModel->updateUser($id, $data);
+    JsonView::render(["message" => $result[0], "success" => $result[1]], 200);
     return;
   }
 
   // Método que deleta um usuário do banco de dados
   public function delete($id)
   {
-    $msg = $this->userModel->deleteUser($id);
-    JsonView::render(["message" => $msg], 200);
+    $result = $this->userModel->deleteUser($id);
+    JsonView::render(["message" => $result[0], "success" => $result[1]], 200);
   }
 }

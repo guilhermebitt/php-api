@@ -1,19 +1,22 @@
 <?php
 require_once __DIR__ . "/../Controllers/UserController.php";
 require_once __DIR__ . "/../Controllers/LoginController.php";
+require_once __DIR__ . "/../Controllers/UploadController.php";
 
 // Classe de controle de rota do sistema MVC
 class Router
 {
-  // Atributo privado para o controle de usuário
+  // Atributo privado para os controladores
   private $userController;
   private $loginController;
+  private $uploadController;
 
   // Método construtor que instância o controller
   public function __construct()
   {
     $this->userController = new UserController();
     $this->loginController = new LoginController();
+    $this->uploadController = new UploadController();
   }
 
   // Método público que retorna um código com base na rota inserida pelo cliente
@@ -36,7 +39,7 @@ class Router
     // Se não receber um endpoint, retorna um erro
     if (!$parts) {
       http_response_code(400);
-      echo json_encode(["error" => "Nenhum endpoint selecionado"]);
+      echo json_encode(["success" => false, "error" => "Nenhum endpoint selecionado"]);
       return;
     }
 
@@ -48,9 +51,34 @@ class Router
         case "POST": // Gera o token para o usuário
           $this->loginController->login($data);
           break;
-        
+
         case "GET": // Valida o token e retorna os dados do usuário
           $this->userController->auth();
+          break;
+        
+        default:
+          http_response_code(405);
+          echo json_encode(["success" => false, "error" => "Método não permitido"]);
+          break;
+      }
+    }
+
+    // ARQUIVOS
+    if ($parts[0] == "upload") {
+      $action = $parts[1] ?? null;
+
+      switch ($method) {
+        case "POST": // Adiciona o arquivo no servidor
+          $this->uploadController->upload();
+          break;
+
+        /* case "GET": // Obtém o arquivo do servidor
+          $this->userController->auth(); */
+
+        default:
+          http_response_code(405);
+          echo json_encode(["success" => false, "error" => "Método não permitido"]);
+          break;
       }
     }
 
@@ -79,7 +107,7 @@ class Router
             $this->userController->update($id, $data);
           } else {
             http_response_code(400);
-            echo json_encode(["error" => "ID obrigatório para atualização"]);
+            echo json_encode(["success" => false, "error" => "ID obrigatório para atualização"]);
           }
           break;
 
@@ -88,13 +116,13 @@ class Router
             $this->userController->delete($id);
           } else {
             http_response_code(400);
-            echo json_encode(["error" => "ID obrigatório para exclusão"]);
+            echo json_encode(["success" => false, "error" => "ID obrigatório para exclusão"]);
           }
           break;
 
         default:
           http_response_code(405);
-          echo json_encode(["error" => "Método não permitido"]);
+          echo json_encode(["success" => false, "error" => "Método não permitido"]);
           break;
       }
     }

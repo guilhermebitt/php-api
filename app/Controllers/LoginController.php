@@ -14,18 +14,23 @@ class LoginController
     $this->userModel = new UserModel();
   }
 
+  // Método que realiza o login do usuário
   public function login($data)
   {
-    $user = $this->userModel->getUserByEmail($data->email ?? '');
-    if (!$user || !password_verify($data->pass, $user['pass_hash'] ?? '')) {
-      return JsonView::render(["error" => "Credenciais inválidas"], 401);
+    $result = $this->userModel->getUserByEmail($data->email ?? '');
+
+    // Verifica se encontrou usuário
+    if ($result[1]) {
+      $user = $result[0];
+    } else {
+      return JsonView::render(["error" => "Usuário não encontrado", "success" => false], 401);
+    }
+    if (!password_verify($data->pass, $user['pass_hash'] ?? '')) {
+      return JsonView::render(["error" => "Credenciais inválidas", "success" => false], 401);
     }
 
     $token = JWT::generate([
-      "id"        => $user['id'],
-      "username"  => $user['username'],
-      "email"     => $user['email'],
-      "phone"     => $user['phone']
+      "id" => $user['id']
     ], 36000);
 
     return JsonView::render(["token" => $token]);

@@ -25,11 +25,10 @@ class UserModel
 
       // Executando a query e a retornando
       $stmt->execute();
-      return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
+      return [$stmt->fetchAll(PDO::FETCH_ASSOC), true];
     } catch (PDOException $e) {
       // EM CASO DE ERRO
-      return "Erro: " . $e->getMessage();
+      return ["Erro: " . $e->getMessage(), false];
     }
   }
 
@@ -42,9 +41,17 @@ class UserModel
       $stmt = $this->db->prepare($sql);
       $stmt->bindParam(':email', $email, PDO::PARAM_STR);
       $stmt->execute();
-      return $stmt->fetch(PDO::FETCH_ASSOC);
+
+      $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      // Se tiver encontrado o usuário, retorna ele
+      if ($result) {
+        return [$result, true];
+      } else {
+        return [null, false];
+      }
     } catch (PDOException $e) {
-      return "Erro: " . $e->getMessage();
+      return ["Erro: " . $e->getMessage(), false];
     }
   }
 
@@ -57,23 +64,34 @@ class UserModel
       $stmt = $this->db->prepare($sql);
       $stmt->bindParam(':id', $id, PDO::PARAM_STR);
       $stmt->execute();
-      return $stmt->fetch(PDO::FETCH_ASSOC);
+
+      $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      // Se tiver encontrado o usuário, retorna ele
+      if ($result) {
+        return [$result, true];
+      } else {
+        return [null, false];
+      }
     } catch (PDOException $e) {
-      return "Erro: " . $e->getMessage();
+      return ["Erro: " . $e->getMessage(), false];
     }
   }
 
   // CREATE
-  public function createUser($username, $email, $pass, $phone = null)
+  public function createUser($username, $email, $pass, $phone = null, $profilePic = null)
   {
     try {
       // Verifica se já existe um usuário
-      if ($this->getUserByEmail($email)) {
+      $result = $this->getUserByEmail($email);
+      if ($this->getUserByEmail($email)[1]) {
         return ["Usuário já existente", false];
       }
 
       // Prepara a query SQL para criar um novo usuário
-      $sql = "INSERT INTO users (username, email, pass_hash, phone) VALUES (:username, :email, :pass_hash, :phone)";
+      $sql = 
+        "INSERT INTO users (username, email, pass_hash, phone, profile_pic) 
+        VALUES (:username, :email, :pass_hash, :phone, :profile_pic)";
       $stmt = $this->db->prepare($sql);
       $hashedPass = password_hash($pass, PASSWORD_DEFAULT);
 
@@ -82,12 +100,13 @@ class UserModel
       $stmt->bindParam(":email", $email, PDO::PARAM_STR);
       $stmt->bindParam(":pass_hash", $hashedPass, PDO::PARAM_STR);
       $stmt->bindParam(":phone", $phone, PDO::PARAM_STR);
+      $stmt->bindParam(":profile_pic", $profilePic, PDO::PARAM_STR);
 
       // Executa a query e retorna uma mensagem
       return $stmt->execute() ? ["Cadastro criado com sucesso!", true] : ["Erro ao cadastrar usuário.", false];
     } catch (PDOException $e) {
       // Retorna uma mensagem de erro em caso de algo ocorrer errado
-      return "Erro: " . $e->getMessage();
+      return ["Erro: " . $e->getMessage(), false];
     }
   }
 
@@ -118,9 +137,14 @@ class UserModel
       $fields[] = "phone = :newPhone";
       $params[':newPhone'] = $data->phone;
     }
+    // Atualizar a foto de perfil
+    if (isset($data->profilePic)) {
+      $fields[] = "profile_pic = :newProfilePic";
+      $params[':newProfilePic'] = $data->profilePic;
+    }
     // Caso não tenha nenhum campo
     if (empty($fields)) {
-      return "Nada para atualizar.";
+      return ["Nada para atualizar.", false];
     }
 
     // Query para atualizar o usuário
@@ -128,7 +152,7 @@ class UserModel
     $stmt = $this->db->prepare($sql);
 
     // Retorna a consulta executada
-    return $stmt->execute($params) ? "Cadastro atualizado com sucesso!" : "Erro ao atualizar.";
+    return $stmt->execute($params) ? ["Cadastro atualizado com sucesso!", true] : ["Erro ao atualizar.", false];
   }
 
   // DELETE
@@ -144,6 +168,6 @@ class UserModel
     $stmt->bindParam("id", $id, PDO::PARAM_INT);
 
     // Executa e retorna a consulta
-    return $stmt->execute() ? "Usuário excluído com sucesso!" : "Erro ao excluir.";
+    return $stmt->execute() ? ["Usuário excluído com sucesso!", true] : ["Erro ao excluir.", false];
   }
 }
